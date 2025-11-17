@@ -1,11 +1,15 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // TODO: consider creating macros to simplify access to a specific type and prevent ugly things like "(ctx->stack->list.words)[i]"
-// TODO: review the parsing of strings and functions
 // TODO: delete the assumption that the given program is both syntactically and semantically correct
-// TODO: support negative and floating point numbers
+// TODO: support floating point numbers
+// TODO: implement a 'polymorphic' behaviour of the words, in order to remove some of the switch cases (ex: pointer to functions based on type)
+// TODO: refactor code in multiple files
+// TODO: implement a lexer
+// TODO: error handling
 
 /**
  * Program example #1:
@@ -160,11 +164,27 @@ tfword *createWord(tftype type) {
     return word;
 }
 
+void releaseWord(tfword *word);     // temporary, needs refactoring
+
 void freeWord(tfword *word) {
-    if (word->type == TF_FUNCTION || word->type == TF_STRING) {
-        free(word->str.ptr);
-        word->str.ptr = NULL;
-        word->str.len = 0;
+    switch (word->type) {
+        case TF_STRING:
+        case TF_FUNCTION:
+            free(word->str.ptr);
+            break;
+        case TF_LIST:
+            // release every word contained in the list
+            for (size_t i = 0; i < word->list.len; i++) {
+                releaseWord(word->list.words[i]);
+            }
+            free(word->list.words);
+            break;
+        // to suppress warning -Wswitch
+        case TF_NUMBER:
+        case TF_BOOLEAN:
+        case TF_UNKNOWN:
+        default:
+            break;
     }
     free(word);
 }
@@ -199,10 +219,17 @@ tfword *createBoolean(int value) {
     return word;
 }
 
+/**
+ * Creates a new tfword of type TF_STRING, copying exactly 'length' bytes from 'string' in the new tfword created.
+ * Therefore the input string doesn't need to be NULL terminated, as the NULL terminator doesn't stop the copy.
+ * The created string is NULL terminated.
+ */
 tfword *createString(char *string, size_t length) {
     tfword *word = createWord(TF_STRING);
+    word->str.ptr = xmalloc((length + 1) * sizeof(*(word->str.ptr)));
+    memcpy(word->str.ptr, string, length);
+    word->str.ptr[length] = '\0';
     word->str.len = length;
-    word->str.ptr = string;
     return word;
 }
 
@@ -224,7 +251,7 @@ tfword *createList() {
 
 /**
  * Pushes 'word' on the end of the list 'l', reallocating the necessary space if needed.
- * It retains the word.
+ * It doesn't retain the word, assuming the caller wants to release it. Otherwise the caller needs to retain the word after listPush.
  */
 void listPush(tfword *l, tfword *word) {
     // checks if there's enough space, otherwise it doubles the capacity
@@ -236,8 +263,6 @@ void listPush(tfword *l, tfword *word) {
 
     l->list.words[l->list.len] = word;
     (l->list.len)++;
-
-    retainWord(word);
 }
 
 /**
@@ -252,25 +277,11 @@ tfword *listPop(tfword *l) {
     return l->list.words[l->list.len];
 }
 
-void releaseList(tfword *l) {
-    // pops every word in the list
-    while (l->list.len > 0) {
-        releaseWord(listPop(l));
-    }
-
-    free(l->list.words);
-    l->list.words = NULL;
-    l->list.capacity = 0;
-}
-
 void initCtx(tfctx *ctx) {
-    // creates the stack
     ctx->stack = createList();
 }
 
 void deinitCtx(tfctx *ctx) {
-    // releases the content of the stack and the stack itself
-    releaseList(ctx->stack);
     releaseWord(ctx->stack);
 }
 
@@ -284,7 +295,72 @@ tfword *pop(tfctx *ctx) {
     return listPop(ctx->stack);
 }
 
-/** Compiles a single word from the parser. Returns NULL if parsing ended or if end of list ']' is encountered */
+/* ======================================= PARSING ===================================== */
+
+/** Advances parser->next to the next non-space character (a character is defined as a space iff isspace(c) == 0). */
+void skipSpaces(tfparser *parser) {
+    while (isspace(parser->next[0])) {
+        (parser->next)++;
+    }
+}
+
+/**
+ * Parses a number word from 'parser', updating parser->next to the next character after parsed word.
+ * Returns the tfword* containing the parsed number.
+ */
+tfword *parseNumber(tfparser *parser) {
+    char *start = parser->next;
+    char *end = NULL;
+
+    // only int for now
+    int num = (int)strtol(start, &end, 0);
+    parser->next = end;
+    return createNumber(num);
+}
+
+int isValidSymbol(int c) {
+    static char *validSymbols = "+-*/%><=";
+    return c != '\0' && (isalpha(c) || strchr(validSymbols, c) != NULL);
+}
+
+/**
+ * Parses a symbol word from 'parser', updating parser->next to the next character after parsed word.
+ * Returns the tfword* containing the parsed symbol name.
+ */
+tfword *parseSymbol(tfparser *parser) {
+    char *start = parser->next;
+    char *end = NULL;
+
+    // goes on until it founds a character c that is neither an alphanumeric nor a symbol contained in validSymbols
+    while (isValidSymbol(parser->next[0])) {
+        (parser->next)++;
+    }
+    end = parser->next;
+    return createFunction(start, end - start);
+}
+
+/**
+ * Parses a string word from 'parser', updating parser->next to the next character after parsed word.
+ * Assumes that parser->next[0] == '\"' and parses until the next '\"'. The string can't contain any " character (not even as \").
+ * Returns the tfword* containing the parsed symbol name.
+ */
+tfword *parseString(tfparser *parser) {
+    (parser->next)++;
+    char *start = parser->next;
+    char *end = NULL;
+
+    while (parser->next[0] != '\"') {
+        (parser->next)++;
+    }
+    end = parser->next;
+    (parser->next)++;
+    return createString(start, end - start);
+}
+
+/**
+ * Compiles a single word from 'parser', updating parser->next to the next character after parsed word.
+ * Returns NULL if parsing ended or if end of list ']' is encountered.
+ */
 tfword *parseNextWord(tfparser *parser) {
     if (parser->next == NULL || *(parser->next) == '\0') return NULL;
 
@@ -294,70 +370,55 @@ tfword *parseNextWord(tfparser *parser) {
      *  - character '"' => STRING
      *  - character '[' => LIST
      */
-    tfword *word;
-    if ((parser->next[0] >= 'A' && parser->next[0] <= 'Z') || (parser->next[0] >= 'a' && parser->next[0] <= 'z')) {
+    tfword *word = NULL;
+    if (parser->next[0] == '-' || isdigit(parser->next[0])) {
 
-        // FUNCTION
-        char *funName = xmalloc(MAX_FUN_LEN * sizeof(*funName));
-        int n = sscanf(parser->next, "%s", funName);
-        if (n <= 0) {
-            perror("Errore in sscanf");
-            exit(1);
-        }
-        word = createFunction(funName, strlen(funName));
+        // TF_NUMBER
+        word = parseNumber(parser);
 
-    } else if (parser->next[0] >= '0' && parser->next[0] <= '9') {
+    } else if (isValidSymbol(parser->next[0])) {
 
-        // NUMBER
-        int value;
-        int n = sscanf(parser->next, "%d", &value);
-        if (n <= 0) {
-            perror("Errore in sscanf");
-            exit(1);
-        }
-        word = createNumber(value);
+        // TF_FUNCTION
+        word = parseSymbol(parser);
 
     } else if (parser->next[0] == '\"') {
 
-        // TODO: what if a string contains a space? Here is assumed string doesn't contain any space
-
-        // STRING
-        char *ptr = xmalloc(MAX_STR_LEN * sizeof(*ptr));
-        int n = sscanf(parser->next, "\"%s\"", ptr);
-        if (n <= 0) {
-            perror("Error in sscanf");
-            exit(1);
-        }
-        word = createString(ptr, strlen(ptr));
+        // TF_STRING
+        word = parseString(parser);
 
     } else if (parser->next[0] == '[') {
 
-        // LIST
+        // TF_LIST
         word = createList();
 
         // populates the list by parsing each word contained in the list until character ']'
+        (parser->next)++;     // skips the '['
         tfword *curr = NULL;
         while (1) {
-            parser->next = strtok(NULL, " ");
+            skipSpaces(parser);
             curr = parseNextWord(parser);
             if (curr == NULL) break;
 
             listPush(word, curr);
-            releaseWord(curr);
         };
 
     } else if (parser->next[0] == ']') {
+
+        // end of TF_LIST
+        (parser->next)++;     // skips the ']'
         return NULL;
+
     } else {
-        fprintf(stderr, "Error in parsing word at position %ld\n", parser->next - parser->program);
+        fprintf(stderr, "Error in parsing word at position %ld. Unrecognized starting character \'%c\'.\nNext 32 characters between quotes:\n\'%32s\'\n",
+                parser->next - parser->program, parser->next[0], parser->next);
         exit(1);
     }
 
     return word;
 }
+
 /**
  * Compiles 'program' into a list.
- * SIMPLIFIED VERSION: assumes that the words are separated by a single space (except for a list, composed by '[ {words separated by space} ]'
  */
 tfword *compile(char *program, size_t length) {
     (void)length;
@@ -372,19 +433,22 @@ tfword *compile(char *program, size_t length) {
         .next = program
     };
 
-    tfword *curr = parseNextWord(&parser);
-    parser.next = strtok(program, " ");
-    do {
-        listPush(list, curr);
-        releaseWord(curr);
+    // skips starting spaces
+    skipSpaces(&parser);
 
-        curr = parseNextWord(&parser);
-        parser.next = strtok(NULL, " ");
-    } while (curr != NULL);
+    // pushes every word into the list
+    tfword *curr = NULL;
+    while ((curr = parseNextWord(&parser)) != NULL) {
+        listPush(list, curr);
+        skipSpaces(&parser);     // skips spaces to go to next word
+    }
 
     return list;
 }
 
+/* ============================== FUNCIONS AND EXECUTION =============================== */
+
+/*
 static char *tftypeName[] = {
     "UNKNOWN",
     "NUMBER",
@@ -392,7 +456,8 @@ static char *tftypeName[] = {
     "STRING",
     "LIST",
     "FUNCTION"
-};
+}
+*/
 
 typedef void (*tfcallback)(tfctx *);
 struct tffunction {
@@ -409,7 +474,7 @@ void printList(tfword *l, int indentation) {
 
         for (int j = 0; j < indentation; j++) printf("\t");
 
-        printf("[%s] ", tftypeName[curr->type]);
+        //   printf("[%s] ", tftypeName[curr->type]);
         switch (curr->type) {
             case TF_NUMBER:
                 printf("%d\n", curr->num);
@@ -482,6 +547,7 @@ void execute(tfctx *ctx, tfword *program) {
             case TF_LIST:
                 // pushes the word on the stack
                 push(ctx, curr);
+                retainWord(curr);     // needs to retain the word again to track that 'program' still has got reference to curr
                 break;
             case TF_FUNCTION:
                 // executes the function with the associated name
@@ -505,31 +571,25 @@ tfword *compilestub(char *program, size_t length) {
     listPush(list, num);
 
     // Push booleano true
-    tfword *bool = createBoolean(1);
-    listPush(list, bool);
-    releaseWord(bool);
+    tfword *boolean = createBoolean(1);
+    listPush(list, boolean);
 
     // Push stringa "hello"
     tfword *string = createString("hello", 5);
     listPush(list, string);
-    releaseWord(string);
 
     tfword *list2 = createList();
     listPush(list, list2);
-    releaseWord(list2);
 
     tfword *num2 = createNumber(12);
     listPush(list2, num2);
-    releaseWord(num2);
 
     tfword *string2 = createString("giovanni", 5);
     listPush(list2, string2);
-    releaseWord(string2);
 
     // Push funzione "print"
     tfword *print = createFunction("print", 5);
     listPush(list, print);
-    releaseWord(print);
 
     return list;
 }
@@ -557,6 +617,9 @@ int main(int argc, char **argv) {
 
     tfword *compiledProg = compile(program, len);
 
+    printf(">> The compiled program looks like this:\n");
+    printList(compiledProg, 0);
+
     printf("\n\n==============================================\nExecuting...\n");
 
     execute(&context, compiledProg);
@@ -564,7 +627,6 @@ int main(int argc, char **argv) {
     printf("\n\n==============================================\nProgram execution terminated, this is the stack:\n");
     tfprint(&context);
 
-    releaseList(compiledProg);
     releaseWord(compiledProg);
 
     deinitCtx(&context);
