@@ -299,6 +299,7 @@ enum tf_tokentype {
     TF_TOK_IDENTIFIER,     // function, variable (in the future)
     TF_TOK_LBRACKET,
     TF_TOK_RBRACKET,
+    TF_TOK_COMMENT,
     TF_TOK_EOF,
     TF_TOK_ERROR
 };
@@ -343,8 +344,10 @@ tf_token findNextToken(tf_lexer *lexer) {
     // skips starting spaces
     skipSpaces(lexer);
 
-    printf("DEBUG: lexer->next = '%c' (offset %ld)\n",
+#ifdef DEBUG
+    printf("[DEBUG]: lexer->next = '%c' (offset %ld)\n",
            lexer->next[0], lexer->next - lexer->program);
+#endif
 
     if (lexer->next[0] == '\0')
         return (tf_token) { TF_TOK_EOF, lexer->next, 0 };
@@ -405,6 +408,18 @@ tf_token findNextToken(tf_lexer *lexer) {
 
         type = TF_TOK_RBRACKET;
         (lexer->next)++;
+        len = lexer->next - start;
+
+    } else if (lexer->next[0] == '#') {
+
+        type = TF_TOK_COMMENT;
+        start = ++(lexer->next);     // increments lexer->next to skip starting '#'. Then updates start
+
+        // searches for newline character
+        while(lexer->next[0] != '\n'){
+            (lexer->next)++;
+        }
+        (lexer->next)++;             // skips '\n'
         len = lexer->next - start;
 
     } else {
@@ -481,18 +496,25 @@ tf_word *parseToken(tf_parser *p, tf_token *token) {
             // populates the list by getting new tokens until a TF_TOK_RBRACKET is found
             tf_token next;
             while ((next = findNextToken(p->lexer)).type != TF_TOK_RBRACKET) {
-                if (next.type == TF_TOK_EOF) {
+                if(next.type == TF_TOK_EOF){
                     fprintf(stderr, "Error in parseToken: unclosed bracket (reached EOF)\n");
                     exit(1);
                 }
                 tf_word *element = parseToken(p, &next);
-                listPush(word, element);
+                if(element != NULL){
+                    listPush(word, element);
+                }
             }
 
             (p->bracket_depth)--;
             break;
         case TF_TOK_RBRACKET:
             // end of TF_LIST
+            break;
+        case TF_TOK_COMMENT:
+#ifdef DEBUG
+            printf("[DEBUG] Encountered comment \'%.*s\'\n", (int)token->len, token->str);
+#endif
             break;
         case TF_TOK_EOF:
             break;
