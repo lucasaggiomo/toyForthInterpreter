@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+size_t readSourceCode(const char *filepath, char **program);
+
 /* =============================== ALLOCATION WRAPPERS =============================== */
 
 void *xmalloc(size_t size);

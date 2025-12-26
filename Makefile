@@ -1,17 +1,20 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinc
+CFLAGS = -Wall -Wextra -Iinc -g -O0
 LDFLAGS =
 
 # Directories
 SRC_DIR = src
 INC_DIR = inc
 BUILD_DIR = build
+TEST_DIR = tests
 
 # Files
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 TARGET = $(BUILD_DIR)/tf_interpreter
+
+TEST = giovanni.tf
 
 # Default target
 build: $(TARGET)
@@ -29,7 +32,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Run with test file
 run: $(TARGET)
-	./$(TARGET) tests/giovanni.tf
+	./$(TARGET) $(TEST_DIR)/$(TEST)
 
 # Clean build artifacts
 clean:

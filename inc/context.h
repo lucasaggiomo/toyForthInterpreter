@@ -12,10 +12,22 @@ void initCtx(tf_ctx *ctx);
 
 void deinitCtx(tf_ctx *ctx);
 
-/** Pushes the *tf_word 'word' on the stack.  */
+/**
+ * Pushes the 'word' on the stack.
+ * See listPush for more details.
+ */
 void push(tf_ctx *ctx, tf_word *word);
 
-/** Pops the tf_word on the top on the stack. */
+/**
+ * Pops the word on the top of the stack.
+ * See listPop for more details.
+ */
 tf_word *pop(tf_ctx *ctx);
+
+/**
+ * Peeks the word on the top of the stack (like pop but it is not removed from the stack).
+ * See listPeek for more details.
+ */
+tf_word *peek(tf_ctx *ctx);
 
 #endif		// _CONTEXT_H_

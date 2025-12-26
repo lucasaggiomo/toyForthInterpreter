@@ -4,17 +4,22 @@
 #include <stddef.h>
 
 enum tf_type {
-    TF_UNKNOWN,
-    TF_NUMBER,
-    TF_BOOLEAN,
-    TF_STRING,
-    TF_LIST,
-    TF_FUNCTION
+    TF_UNKNOWN = 0,
+    TF_NUMBER = 1 << 0,
+    TF_BOOLEAN = 1 << 1,
+    TF_STRING = 1 << 2,
+    TF_LIST = 1 << 3,
+    TF_FUNCTION = 1 << 4
 };
 typedef enum tf_type tf_type;
 
+// restituisce 0 se obj non è un tipo valido tra quelli presenti nella maschera (oppure se mask == 0)
+#define TF_VALID_TYPE(obj, mask) (((obj)->type & (mask)))
+
 #define MAX_FUN_LEN 32
 #define MAX_STR_LEN 256
+
+const char *getTypeName(tf_type type);
 
 /**
  * The code to interpret is modeled as a list of `words`.
@@ -90,10 +95,17 @@ tf_word *createList();
 void listPush(tf_word *l, tf_word *word);
 
 /**
- * Pops the word at the and of the list `l`, or NULL if list is empty.
+ * Pops the word at the end of the list `l`, or NULL if list is empty.
  * The ownership of the word is transferred to the caller.
  * Therefore, the caller has to release the word at the end of usage.
  */
 tf_word *listPop(tf_word *l);
+
+/**
+ * Peeks the word at the end of the list `l`, or NULL if list is empty.
+ * The word is automatically retained for the caller, because the word remains in the list.
+ * Therefore, the caller has to release the word at the end of usage.
+ */
+tf_word *listPeek(tf_word *l);
 
 #endif     // _WORD_H_

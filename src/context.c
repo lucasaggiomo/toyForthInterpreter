@@ -15,3 +15,7 @@ void push(tf_ctx *ctx, tf_word *word) {
 tf_word *pop(tf_ctx *ctx) {
     return listPop(ctx->stack);
 }
+
+tf_word *peek(tf_ctx *ctx) {
+    return listPeek(ctx->stack);
+}

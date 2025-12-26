@@ -1,15 +1,28 @@
 #include "word.h"
 
 #include "utils.h"
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include <stdio.h>  // debug, va rimosso
+#include <stdio.h>     // debug, va rimosso
+
+const char *getTypeName(tf_type type) {
+    switch (type) {
+        default:
+        case TF_UNKNOWN: return "UNKNOWN";
+        case TF_NUMBER: return "NUMBER";
+        case TF_BOOLEAN: return "BOOLEAN";
+        case TF_STRING: return "STRING";
+        case TF_LIST: return "LIST";
+        case TF_FUNCTION: return "FUNCTION";
+    }
+}
 
 /* =============================== CREATIONAL PROCEDURES =============================== */
 
 /** Creates a new tf_word of type `type`. Used by other creational procedures, do not use directly. */
 tf_word *createWord(tf_type type) {
+    // printf("[DEBUG] Creating word of type %s\n", getTypeName(type));
     tf_word *word = xmalloc(sizeof(*word));
     word->type = type;
     word->refcount = 1;
@@ -46,6 +59,9 @@ void retainWord(tf_word *word) {
         exit(1);
     }
     (word->refcount)++;
+
+    // printf("\t[DEBUG] Retained word");
+    // printWord(word, 1);
 }
 
 void releaseWord(tf_word *word) {
@@ -54,6 +70,9 @@ void releaseWord(tf_word *word) {
         exit(1);
     }
     (word->refcount)--;
+
+    // printf("\t[DEBUG] Released word");
+    // printWord(word, 1);
 
     if (word->refcount == 0) freeWord(word);
 }
@@ -113,4 +132,14 @@ tf_word *listPop(tf_word *l) {
 
     (l->list.len)--;
     return l->list.words[l->list.len];
+}
+
+tf_word *listPeek(tf_word *l) {
+    if (l->list.len == 0)
+        return NULL;
+
+    tf_word *word = l->list.words[l->list.len - 1];
+    retainWord(word);
+
+    return word;
 }

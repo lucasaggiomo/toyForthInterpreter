@@ -1,8 +1,4 @@
-1 print [2 print] #commentone
-[ 3 # altro commento
-
- ###########
-#
-
-]
-print
+5
+[dup dup ==]  # condition
+[10 +]   # true-branch
+if     # invoke if

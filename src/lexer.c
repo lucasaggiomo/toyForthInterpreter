@@ -4,8 +4,8 @@
 #include <string.h>
 
 // debug, va rimosso
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void skipSpaces(tf_lexer *lexer) {
     while (isspace(lexer->next[0])) {
@@ -96,11 +96,11 @@ tf_token findNextToken(tf_lexer *lexer) {
         type = TF_TOK_COMMENT;
         start = ++(lexer->next);     // increments lexer->next to skip starting '#'. Then updates start
 
-        // searches for newline character
-        while(lexer->next[0] != '\n'){
+        // searches for newline character or eof
+        while (lexer->next[0] != '\n' && lexer->next[0] != '\0') {
             (lexer->next)++;
         }
-        (lexer->next)++;             // skips '\n'
+        (lexer->next)++;     // skips '\n'
         len = lexer->next - start;
 
     } else {

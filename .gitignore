@@ -60,3 +60,6 @@ build/
 .vim/
 .vimrc/
 .clang-format
+
+.cache/
+compile_commands.json
