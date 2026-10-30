@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void skipSpaces(tf_lexer *lexer) {
+void skipSpaces(TfLexer *lexer) {
     while (isspace(lexer->next[0])) {
         (lexer->next)++;
     }
@@ -18,9 +18,9 @@ int isValidSymbol(int c) {
     return c != '\0' && (isalpha(c) || strchr(validSymbols, c) != NULL);
 }
 
-tf_token findNextToken(tf_lexer *lexer) {
+TfToken findNextToken(TfLexer *lexer) {
     if (lexer->next == NULL)
-        return (tf_token) { TF_TOK_EOF, lexer->next, 0 };
+        return (TfToken) { TF_TOK_EOF, lexer->next, 0 };
 
     // skips starting spaces
     skipSpaces(lexer);
@@ -31,9 +31,9 @@ tf_token findNextToken(tf_lexer *lexer) {
 #endif
 
     if (lexer->next[0] == '\0')
-        return (tf_token) { TF_TOK_EOF, lexer->next, 0 };
+        return (TfToken) { TF_TOK_EOF, lexer->next, 0 };
 
-    /* Detects type of token encountered:
+    /* Detects kind of token encountered:
      *  - letter (between 'A' and 'Z' or between 'a' and 'z') => TF_TOK_IDENTIFIER
      *  - digit (between '0' and '9') or '-' => TF_TOK_NUMBER
      *  - character '"' => TF_TOK_STRING
@@ -43,10 +43,10 @@ tf_token findNextToken(tf_lexer *lexer) {
 
     char *start = lexer->next;
     size_t len = 0;
-    tf_toktype type = TF_TOK_ERROR;
+    TfTokenKind kind = TF_TOK_ERROR;
     if (isdigit(lexer->next[0]) || (lexer->next[0] == '-' && isdigit(lexer->next[1]))) {
 
-        type = TF_TOK_NUMBER;
+        kind = TF_TOK_NUMBER;
         if (lexer->next[0] == '-')
             (lexer->next)++;
         while (isdigit(lexer->next[0])) {
@@ -56,7 +56,7 @@ tf_token findNextToken(tf_lexer *lexer) {
 
     } else if (isValidSymbol(lexer->next[0])) {
 
-        type = TF_TOK_IDENTIFIER;
+        kind = TF_TOK_IDENTIFIER;
         while (isValidSymbol(lexer->next[0])) {
             (lexer->next)++;
         }
@@ -64,7 +64,7 @@ tf_token findNextToken(tf_lexer *lexer) {
 
     } else if (lexer->next[0] == '\"') {
 
-        type = TF_TOK_STRING;
+        kind = TF_TOK_STRING;
         start = ++(lexer->next);     // increments lexer->next to skip starting '\"'. Then updates start
         while (lexer->next[0] != '\"' && lexer->next[0] != '\0') {
             (lexer->next)++;
@@ -81,19 +81,19 @@ tf_token findNextToken(tf_lexer *lexer) {
 
     } else if (lexer->next[0] == '[') {
 
-        type = TF_TOK_LBRACKET;
+        kind = TF_TOK_LBRACKET;
         (lexer->next)++;
         len = lexer->next - start;
 
     } else if (lexer->next[0] == ']') {
 
-        type = TF_TOK_RBRACKET;
+        kind = TF_TOK_RBRACKET;
         (lexer->next)++;
         len = lexer->next - start;
 
     } else if (lexer->next[0] == '#') {
 
-        type = TF_TOK_COMMENT;
+        kind = TF_TOK_COMMENT;
         start = ++(lexer->next);     // increments lexer->next to skip starting '#'. Then updates start
 
         // searches for newline character or eof
@@ -109,5 +109,5 @@ tf_token findNextToken(tf_lexer *lexer) {
         exit(1);
     }
 
-    return (tf_token) { type, start, len };
+    return (TfToken) { kind, start, len };
 }

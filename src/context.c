@@ -1,21 +1,21 @@
 #include "context.h"
 
-void initCtx(tf_ctx *ctx) {
+void initCtx(TfCtx *ctx) {
     ctx->stack = createList();
 }
 
-void deinitCtx(tf_ctx *ctx) {
+void deinitCtx(TfCtx *ctx) {
     releaseWord(ctx->stack);
 }
 
-void push(tf_ctx *ctx, tf_word *word) {
+void push(TfCtx *ctx, TfWord *word) {
     listPush(ctx->stack, word);
 }
 
-tf_word *pop(tf_ctx *ctx) {
+TfWord *pop(TfCtx *ctx) {
     return listPop(ctx->stack);
 }
 
-tf_word *peek(tf_ctx *ctx) {
+TfWord *peek(TfCtx *ctx) {
     return listPeek(ctx->stack);
 }

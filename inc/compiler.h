@@ -6,6 +6,6 @@
 /**
  * Compiles 'program' into a list.
  */
-tf_word *compile(char *program, size_t length);
+TfWord *compile(char *program, size_t length);
 
 #endif		// _COMPILER_H_

@@ -8,7 +8,7 @@
 #include "utils.h"
 
 /**
- * TODO: consider creating macros to simplify access to a specific type and prevent ugly things like "(ctx->stack->list.words)[i]"
+ * TODO: consider creating macros to simplify access to a specific type and prevent ugly things like "(ctx->stack->as.list.words)[i]"
  * TODO: delete the assumption that the given program is both syntactically and semantically correct
  * TODO: support floating point numbers
  * TODO: refactor functions, implementing a 'polymorphic' behaviour of the words, in order to remove some of the switch cases (ex: pointer to functions based on type)
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     size_t len = readSourceCode(argv[1], &program);
 
     // single context for now
-    tf_ctx context;
+    TfCtx context;
 
     initCtx(&context);
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 
     PRINTF_HEADER("Interpreting...");
 
-    tf_word *compiledProg = compile(program, len);
+    TfWord *compiledProg = compile(program, len);
 
     printf(">> The compiled program looks like this:\n");
     printListFIFO(compiledProg);
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 
     PRINTF_HEADER("Terminating...");
     printf("\nProgram execution terminated, this is the stack:\n");
-    tfprint(&context);
+    tfPrint(&context);
 
     releaseWord(compiledProg);
 

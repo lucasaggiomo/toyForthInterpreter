@@ -6,7 +6,7 @@
 
 #include <stdio.h>     // debug, va rimosso
 
-const char *getTypeName(tf_type type) {
+const char *getTypeName(TfType type) {
     switch (type) {
         default:
         case TF_UNKNOWN: return "UNKNOWN";
@@ -20,28 +20,28 @@ const char *getTypeName(tf_type type) {
 
 /* =============================== CREATIONAL PROCEDURES =============================== */
 
-/** Creates a new tf_word of type `type`. Used by other creational procedures, do not use directly. */
-tf_word *createWord(tf_type type) {
+/** Creates a new TfWord of type `type`. Used by other creational procedures, do not use directly. */
+TfWord *createWord(TfType type) {
     // printf("[DEBUG] Creating word of type %s\n", getTypeName(type));
-    tf_word *word = xmalloc(sizeof(*word));
+    TfWord *word = xmalloc(sizeof(*word));
     word->type = type;
     word->refcount = 1;
     return word;
 }
 
-/** Frees the allocated tf_word `word`. If word->type == TF_LIST, every word contained in the list is released first.*/
-void freeWord(tf_word *word) {
+/** Frees the allocated TfWord `word`. If word->type == TF_LIST, every word contained in the list is released first.*/
+void freeWord(TfWord *word) {
     switch (word->type) {
         case TF_STRING:
         case TF_FUNCTION:
-            free(word->str.ptr);
+            free(word->as.str.ptr);
             break;
         case TF_LIST:
             // release every word contained in the list
-            for (size_t i = 0; i < word->list.len; i++) {
-                releaseWord(word->list.words[i]);
+            for (size_t i = 0; i < word->as.list.len; i++) {
+                releaseWord(word->as.list.words[i]);
             }
-            free(word->list.words);
+            free(word->as.list.words);
             break;
         // to suppress warning -Wswitch
         case TF_NUMBER:
@@ -53,7 +53,7 @@ void freeWord(tf_word *word) {
     free(word);
 }
 
-void retainWord(tf_word *word) {
+void retainWord(TfWord *word) {
     if (word->refcount == 0) {
         fprintf(stderr, "Error: tried retaining word with refcount = 0");
         exit(1);
@@ -64,7 +64,7 @@ void retainWord(tf_word *word) {
     // printWord(word, 1);
 }
 
-void releaseWord(tf_word *word) {
+void releaseWord(TfWord *word) {
     if (word->refcount == 0) {
         fprintf(stderr, "Error: tried releasing word with refcount = 0");
         exit(1);
@@ -77,68 +77,68 @@ void releaseWord(tf_word *word) {
     if (word->refcount == 0) freeWord(word);
 }
 
-tf_word *createNumber(int num) {
-    tf_word *word = createWord(TF_NUMBER);
-    word->num = num;
+TfWord *createNumber(int num) {
+    TfWord *word = createWord(TF_NUMBER);
+    word->as.num = num;
     return word;
 }
 
-tf_word *createBoolean(int value) {
-    tf_word *word = createNumber(value);
+TfWord *createBoolean(int value) {
+    TfWord *word = createNumber(value);
     word->type = TF_BOOLEAN;
     return word;
 }
 
-tf_word *createString(char *string, size_t length) {
-    tf_word *word = createWord(TF_STRING);
-    word->str.ptr = xmalloc((length + 1) * sizeof(*(word->str.ptr)));
-    memcpy(word->str.ptr, string, length);
-    word->str.ptr[length] = '\0';
-    word->str.len = length;
+TfWord *createString(char *string, size_t length) {
+    TfWord *word = createWord(TF_STRING);
+    word->as.str.ptr = xmalloc((length + 1) * sizeof(*(word->as.str.ptr)));
+    memcpy(word->as.str.ptr, string, length);
+    word->as.str.ptr[length] = '\0';
+    word->as.str.len = length;
     return word;
 }
 
-tf_word *createFunction(char *funName, size_t length) {
-    tf_word *word = createString(funName, length);
+TfWord *createFunction(char *funName, size_t length) {
+    TfWord *word = createString(funName, length);
     word->type = TF_FUNCTION;
     return word;
 }
 
-tf_word *createList() {
-    tf_word *word = createWord(TF_LIST);
-    word->list.len = 0;
-    word->list.capacity = 0;
-    word->list.words = NULL;
+TfWord *createList() {
+    TfWord *word = createWord(TF_LIST);
+    word->as.list.len = 0;
+    word->as.list.capacity = 0;
+    word->as.list.words = NULL;
     return word;
 }
 
 /* ================================== LIST OPERATIONS ================================== */
 
-void listPush(tf_word *l, tf_word *word) {
+void listPush(TfWord *l, TfWord *word) {
     // checks if there's enough space, otherwise it doubles the capacity
-    if (l->list.len == l->list.capacity) {
-        size_t newCapacity = (l->list.capacity == 0) ? 8 : l->list.capacity * 2;     // TODO: check overflow
-        l->list.words = xrealloc(l->list.words, newCapacity * sizeof(*(l->list.words)));
-        l->list.capacity = newCapacity;
+    if (l->as.list.len == l->as.list.capacity) {
+        size_t newCapacity = (l->as.list.capacity == 0) ? 8 : l->as.list.capacity * 2;     // TODO: check overflow
+        l->as.list.words = xrealloc(l->as.list.words, newCapacity * sizeof(*(l->as.list.words)));
+        l->as.list.capacity = newCapacity;
     }
 
-    l->list.words[l->list.len] = word;
-    (l->list.len)++;
+    l->as.list.words[l->as.list.len] = word;
+    (l->as.list.len)++;
 }
 
-tf_word *listPop(tf_word *l) {
-    if (l->list.len == 0)
+TfWord *listPop(TfWord *l) {
+    if (l->as.list.len == 0)
         return NULL;
 
-    (l->list.len)--;
-    return l->list.words[l->list.len];
+    (l->as.list.len)--;
+    return l->as.list.words[l->as.list.len];
 }
 
-tf_word *listPeek(tf_word *l) {
-    if (l->list.len == 0)
+TfWord *listPeek(TfWord *l) {
+    if (l->as.list.len == 0)
         return NULL;
 
-    tf_word *word = l->list.words[l->list.len - 1];
+    TfWord *word = l->as.list.words[l->as.list.len - 1];
     retainWord(word);
 
     return word;

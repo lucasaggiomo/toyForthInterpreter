@@ -1,10 +1,10 @@
 #include "parser.h"
 
 // debug, va rimosso
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-tf_word *parseNumber(tf_token *token) {
+TfWord *parseNumber(TfToken *token) {
     char *end = NULL;
 
     // only int for now
@@ -17,30 +17,33 @@ tf_word *parseNumber(tf_token *token) {
     return createNumber(num);
 }
 
-tf_word *parseSymbol(tf_token *token) {
+TfWord *parseSymbol(TfToken *token) {
     return createFunction(token->str, token->len);
 }
 
-tf_word *parseString(tf_token *token) {
+TfWord *parseString(TfToken *token) {
     return createString(token->str, token->len);
 }
 
-tf_word *parseToken(tf_parser *p, tf_token *token) {
-    tf_word *word = NULL;
+TfWord *parseToken(TfParser *p, TfToken *token) {
+    TfWord *word = NULL;
 
-    switch (token->type) {
+    switch (token->kind) {
         case TF_TOK_NUMBER:
             // TF_NUMBER
             word = parseNumber(token);
             break;
+
         case TF_TOK_STRING:
             // TF_STRING
             word = parseString(token);
             break;
+
         case TF_TOK_IDENTIFIER:
             // TF_FUNCTION
             word = parseSymbol(token);
             break;
+
         case TF_TOK_LBRACKET:
             // start of TF_LIST
             word = createList();
@@ -48,34 +51,39 @@ tf_word *parseToken(tf_parser *p, tf_token *token) {
             (p->bracket_depth)++;
 
             // populates the list by getting new tokens until a TF_TOK_RBRACKET is found
-            tf_token next;
-            while ((next = findNextToken(p->lexer)).type != TF_TOK_RBRACKET) {
-                if(next.type == TF_TOK_EOF){
+            TfToken next;
+            while ((next = findNextToken(p->lexer)).kind != TF_TOK_RBRACKET) {
+                if (next.kind == TF_TOK_EOF) {
                     fprintf(stderr, "Error in parseToken: unclosed bracket (reached EOF)\n");
                     exit(1);
                 }
-                tf_word *element = parseToken(p, &next);
-                if(element != NULL){
+                TfWord *element = parseToken(p, &next);
+                if (element != NULL) {
                     listPush(word, element);
                 }
             }
 
             (p->bracket_depth)--;
             break;
+
         case TF_TOK_RBRACKET:
             // end of TF_LIST
             break;
+
         case TF_TOK_COMMENT:
 #ifdef DEBUG
             printf("[DEBUG] Encountered comment \'%.*s\'\n", (int)token->len, token->str);
 #endif
             break;
+
         case TF_TOK_EOF:
             break;
+
         case TF_TOK_ERROR:
             fprintf(stderr, "Error in parseToken: error token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
                     p->lexer->next - p->lexer->program, p->lexer->next);
             exit(1);
+
         default:
             fprintf(stderr, "Error in parseToken: unrecognized token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
                     p->lexer->next - p->lexer->program, p->lexer->next);
@@ -85,13 +93,13 @@ tf_word *parseToken(tf_parser *p, tf_token *token) {
     return word;
 }
 
-tf_word *parse(tf_lexer *lexer) {
-    tf_word *list = createList();
+TfWord *parse(TfLexer *lexer) {
+    TfWord *list = createList();
 
-    tf_token token;
-    tf_parser p = {.lexer = lexer, .bracket_depth = 0};
-    while ((token = findNextToken(lexer)).type != TF_TOK_EOF) {
-        if (token.type == TF_TOK_RBRACKET) {
+    TfToken token;
+    TfParser p = { .lexer = lexer, .bracket_depth = 0 };
+    while ((token = findNextToken(lexer)).kind != TF_TOK_EOF) {
+        if (token.kind == TF_TOK_RBRACKET) {
             if (p.bracket_depth == 0) {
                 fprintf(stderr, "Error in parse: unmatched ']' at position %ld\n",
                         token.str - lexer->program);
@@ -99,7 +107,7 @@ tf_word *parse(tf_lexer *lexer) {
             }
         }
         // parses the token
-        tf_word *word = parseToken(&p, &token);
+        TfWord *word = parseToken(&p, &token);
         if (word != NULL) {
             listPush(list, word);
         }

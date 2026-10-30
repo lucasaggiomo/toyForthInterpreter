@@ -3,30 +3,27 @@
 
 #include "context.h"
 
-typedef void (*tf_callback)(tf_ctx *);
-struct tf_function {
+typedef void (*TfCallback)(TfCtx *);
+typedef struct TfFunctionEntry {
     char *name;
-    tf_callback callback;
-};
-typedef struct tf_function tf_function;
+    TfCallback callback;
+} TfFunctionEntry;
 
-void printWord(tf_word *word, int indentation);
+void printWord(TfWord *word, int indentation);
 
 /** Prints the list 'l' in FIFO fashion. */
-void printListFIFO(tf_word *l);
+void printListFIFO(TfWord *l);
 
 /** Prints the stack. */
-void printStack(tf_word *stack);
+void printStack(TfWord *stack);
 
-void tfprint(tf_ctx *ctx);
-void tfnop(tf_ctx *ctx);
-
-tf_callback getCallback(const char *name);
+void tfPrint(TfCtx *ctx);
+void tfNop(TfCtx *ctx);
 
 /** Executes the function whose name is in the word 'fun' (interpreted as a TF_FUNCTION) */
-void executeFunction(tf_ctx *ctx, tf_word *fun);
+void executeFunction(TfCtx *ctx, TfWord *fun);
 
 /** Executes each word in the list 'program' with the context 'ctx'. */
-void execute(tf_ctx *ctx, tf_word *program);
+void execute(TfCtx *ctx, TfWord *program);
 
 #endif		// _EXECUTION_H_

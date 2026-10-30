@@ -24,11 +24,12 @@
         if (!(expr)) ABORT_EXECUTION(fmt, ##__VA_ARGS__); \
     } while (0)
 
-static inline void tf_require_type(
+static inline void tfRequireType(
     const char *funName,
-    tf_word *op,
-    tf_type mask,
-    size_t num) {
+    TfWord *op,
+    TfType mask,
+    size_t num
+) {
     if (mask != TF_UNKNOWN) {
         TF_REQUIRE(
             TF_VALID_TYPE(op, mask),
@@ -41,35 +42,35 @@ static inline void tf_require_type(
     }
 }
 
-typedef void (*tf_monary_fun)(tf_ctx *, tf_word *);
-typedef void (*tf_binary_fun)(tf_ctx *, tf_word *, tf_word *);
-typedef void (*tf_ternary_fun)(tf_ctx *, tf_word *, tf_word *, tf_word *);
-typedef void (*tf_nary_fun)(tf_ctx *, size_t, tf_word **);
+typedef void (*TfMonaryFun)(TfCtx *, TfWord *);
+typedef void (*TfBinaryFun)(TfCtx *, TfWord *, TfWord *);
+typedef void (*TfTernaryFun)(TfCtx *, TfWord *, TfWord *, TfWord *);
+typedef void (*TfNaryFun)(TfCtx *, size_t, TfWord **);
 
-void tfmonaryfun(tf_ctx *ctx, const char *funName, tf_type typeMaskOp, tf_monary_fun fun) {
-    TF_REQUIRE(ctx->stack->list.len >= 1,
+void tfMonaryFun(TfCtx *ctx, const char *funName, TfType typeMaskOp, TfMonaryFun fun) {
+    TF_REQUIRE(ctx->stack->as.list.len >= 1,
                "Tried %s operation when the stack had less than 1 element", funName);
 
-    tf_word *op = pop(ctx);
+    TfWord *op = pop(ctx);
 
     // checks the required types (only if a specific type is required -> TF_UNKNOWN means no checking)
-    tf_require_type(funName, op, typeMaskOp, 1);
+    tfRequireType(funName, op, typeMaskOp, 1);
 
     fun(ctx, op);
 
     releaseWord(op);
 }
 
-void tfbinaryfun(tf_ctx *ctx, const char *funName, tf_type typeMaskOp1, tf_type typeMaskOp2, tf_binary_fun fun) {
-    TF_REQUIRE(ctx->stack->list.len >= 2,
+void tfBinaryFun(TfCtx *ctx, const char *funName, TfType typeMaskOp1, TfType typeMaskOp2, TfBinaryFun fun) {
+    TF_REQUIRE(ctx->stack->as.list.len >= 2,
                "Tried %s operation when the stack had less than 2 elements", funName);
 
-    tf_word *op1 = pop(ctx);
-    tf_word *op2 = pop(ctx);
+    TfWord *op1 = pop(ctx);
+    TfWord *op2 = pop(ctx);
 
     // checks the required types (only if a specific type is required -> TF_UNKNOWN means no checking)
-    tf_require_type(funName, op1, typeMaskOp1, 1);
-    tf_require_type(funName, op2, typeMaskOp2, 2);
+    tfRequireType(funName, op1, typeMaskOp1, 1);
+    tfRequireType(funName, op2, typeMaskOp2, 2);
 
     fun(ctx, op1, op2);
 
@@ -77,18 +78,18 @@ void tfbinaryfun(tf_ctx *ctx, const char *funName, tf_type typeMaskOp1, tf_type 
     releaseWord(op2);
 }
 
-void tfternaryfun(tf_ctx *ctx, const char *funName, tf_type typeMaskOp1, tf_type typeMaskOp2, tf_type typeMaskOp3, tf_ternary_fun fun) {
-    TF_REQUIRE(ctx->stack->list.len >= 3,
+void tfTernaryFun(TfCtx *ctx, const char *funName, TfType typeMaskOp1, TfType typeMaskOp2, TfType typeMaskOp3, TfTernaryFun fun) {
+    TF_REQUIRE(ctx->stack->as.list.len >= 3,
                "Tried %s operation when the stack had less than 3 elements", funName);
 
-    tf_word *op1 = pop(ctx);
-    tf_word *op2 = pop(ctx);
-    tf_word *op3 = pop(ctx);
+    TfWord *op1 = pop(ctx);
+    TfWord *op2 = pop(ctx);
+    TfWord *op3 = pop(ctx);
 
     // checks the required types (only if a specific type is required -> TF_UNKNOWN means no checking)
-    tf_require_type(funName, op1, typeMaskOp1, 1);
-    tf_require_type(funName, op2, typeMaskOp2, 2);
-    tf_require_type(funName, op3, typeMaskOp3, 3);
+    tfRequireType(funName, op1, typeMaskOp1, 1);
+    tfRequireType(funName, op2, typeMaskOp2, 2);
+    tfRequireType(funName, op3, typeMaskOp3, 3);
 
     fun(ctx, op1, op2, op3);
 
@@ -99,18 +100,18 @@ void tfternaryfun(tf_ctx *ctx, const char *funName, tf_type typeMaskOp1, tf_type
 
 #define MAX_VARIADIC_ARGS 16
 
-void tfnaryfun(tf_ctx *ctx, const char *funName, size_t argc, tf_type *typeMaskOp, tf_nary_fun fun) {
+void tfNaryFun(TfCtx *ctx, const char *funName, size_t argc, TfType *typeMaskOp, TfNaryFun fun) {
     TF_REQUIRE(argc <= MAX_VARIADIC_ARGS,
                "Too many arguments for %s: %zu (max %d)",
                funName, argc, MAX_VARIADIC_ARGS);
 
-    TF_REQUIRE(ctx->stack->list.len >= argc,
+    TF_REQUIRE(ctx->stack->as.list.len >= argc,
                "Tried %s operation when the stack had less than %zu elements", funName, argc);
 
-    tf_word *op[MAX_VARIADIC_ARGS];
+    TfWord *op[MAX_VARIADIC_ARGS];
     for (size_t i = 0; i < argc; i++) {
         op[i] = pop(ctx);
-        tf_require_type(funName, op[i], typeMaskOp[i], i + 1);
+        tfRequireType(funName, op[i], typeMaskOp[i], i + 1);
     }
 
     fun(ctx, argc, op);
@@ -123,48 +124,53 @@ void tfnaryfun(tf_ctx *ctx, const char *funName, size_t argc, tf_type *typeMaskO
 // convenient macros to define new functions
 
 #define TF_DEF_MONARY(name, identifier, typeMaskOp)                \
-    static inline void tf##name(tf_ctx *ctx) {                     \
-        tfmonaryfun(ctx, #identifier, typeMaskOp, _tf##name##fun); \
+    static inline void tf##name(TfCtx *ctx) {                      \
+        tfMonaryFun(ctx, #identifier, typeMaskOp, _tf##name##Fun); \
     }
 
 #define TF_DEF_BINARY(name, identifier, typeMaskOp1, typeMaskOp2)                \
-    static inline void tf##name(tf_ctx *ctx) {                                   \
-        tfbinaryfun(ctx, #identifier, typeMaskOp1, typeMaskOp2, _tf##name##fun); \
+    static inline void tf##name(TfCtx *ctx) {                                    \
+        tfBinaryFun(ctx, #identifier, typeMaskOp1, typeMaskOp2, _tf##name##Fun); \
     }
 
 #define TF_DEF_TERNARY(name, identifier, typeMaskOp1, typeMaskOp2, typeMaskOp3)                \
-    static inline void tf##name(tf_ctx *ctx) {                                                 \
-        tfternaryfun(ctx, #identifier, typeMaskOp1, typeMaskOp2, typeMaskOp3, _tf##name##fun); \
+    static inline void tf##name(TfCtx *ctx) {                                                  \
+        tfTernaryFun(ctx, #identifier, typeMaskOp1, typeMaskOp2, typeMaskOp3, _tf##name##Fun); \
     }
 
 /* =============================== HELPER FUNCTIONS =============================== */
 
-void printWord(tf_word *word, int indentation) {
+void printWord(TfWord *word, int indentation) {
     // for (int j = 0; j < indentation; j++) printf("\t");
 
     // printf("[%s] {refcount = %d} = ", getTypeName(word->type), word->refcount);
     switch (word->type) {
         case TF_NUMBER:
-            printf("%d ", word->num);
+            printf("%d ", word->as.num);
             break;
+
         case TF_BOOLEAN:
-            printf("%s ", word->num == 0 ? "false" : "true");
+            printf("%s ", word->as.num == 0 ? "false" : "true");
             break;
+
         case TF_STRING:
-            printf("\"%s\" ", word->str.ptr);
+            printf("\"%s\" ", word->as.str.ptr);
             break;
+
         case TF_FUNCTION:
-            printf("\'%s\' ", word->str.ptr);
+            printf("\'%s\' ", word->as.str.ptr);
             break;
+
         case TF_LIST:
             printf("[ ");
             // printf("\n");
-            for (size_t i = 0; i < word->list.len; i++) {
-                printWord(word->list.words[i], indentation + 1);     // recursively prints the list
+            for (size_t i = 0; i < word->as.list.len; i++) {
+                printWord(word->as.list.words[i], indentation + 1);     // recursively prints the list
             }
             for (int j = 0; j < indentation; j++) printf("\t");
             printf("] ");
             break;
+
         default:
             fprintf(stderr, "Error in printWord: invalid word type encountered: %d\n", word->type);
             exit(1);
@@ -172,34 +178,34 @@ void printWord(tf_word *word, int indentation) {
     // printf("\n");
 }
 
-void printListFIFO(tf_word *l) {
-    for (size_t i = 0; i < l->list.len; i++) {
-        printWord(l->list.words[i], 0);
+void printListFIFO(TfWord *l) {
+    for (size_t i = 0; i < l->as.list.len; i++) {
+        printWord(l->as.list.words[i], 0);
     }
 }
 
-void printStack(tf_word *stack) {
-    for (size_t i = 1; i <= stack->list.len; i++) {
-        printWord(stack->list.words[stack->list.len - i], 0);
+void printStack(TfWord *stack) {
+    for (size_t i = 1; i <= stack->as.list.len; i++) {
+        printWord(stack->as.list.words[stack->as.list.len - i], 0);
     }
 }
 
-void _tfaddfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *sum = createNumber(op1->num + op2->num);
+void _tfAddFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *sum = createNumber(op1->as.num + op2->as.num);
 
     push(ctx, sum);
 }
 
-void _tfcallfun(tf_ctx *ctx, tf_word *program) {
+void _tfCallFun(TfCtx *ctx, TfWord *program) {
     execute(ctx, program);
 }
 
-// static tf_monary_fun _tfcallfun = execute;
+// static TfMonaryFun _tfCallFun = execute;
 
 /** condition [ifTrue] if */
-void _tfiffun(tf_ctx *ctx, tf_word *ifTrue, tf_word *expression) {
+void _tfIfFun(TfCtx *ctx, TfWord *ifTrue, TfWord *expression) {
     // evaluates the expression
-    tf_word *cond;
+    TfWord *cond;
     int toRelease = 0;
     if (expression->type == TF_LIST) {
         // (expression) TF_LIST
@@ -214,7 +220,7 @@ void _tfiffun(tf_ctx *ctx, tf_word *ifTrue, tf_word *expression) {
     }
 
     // execution
-    if (cond->num) {
+    if (cond->as.num) {
         execute(ctx, ifTrue);
     }
 
@@ -222,9 +228,9 @@ void _tfiffun(tf_ctx *ctx, tf_word *ifTrue, tf_word *expression) {
 }
 
 /** condition [ifTrue] [ifFalse] ifelse */
-void _tfifelsefun(tf_ctx *ctx, tf_word *ifFalse, tf_word *ifTrue, tf_word *expression) {
+void _tfIfelseFun(TfCtx *ctx, TfWord *ifFalse, TfWord *ifTrue, TfWord *expression) {
     // evaluates the expression
-    tf_word *cond;
+    TfWord *cond;
     int toRelease = 0;
     if (expression->type == TF_LIST) {
         // (expression) TF_LIST
@@ -239,7 +245,7 @@ void _tfifelsefun(tf_ctx *ctx, tf_word *ifFalse, tf_word *ifTrue, tf_word *expre
     }
 
     // execution
-    if (cond->num) {
+    if (cond->as.num) {
         execute(ctx, ifTrue);
     } else {
         execute(ctx, ifFalse);
@@ -248,32 +254,32 @@ void _tfifelsefun(tf_ctx *ctx, tf_word *ifFalse, tf_word *ifTrue, tf_word *expre
     if (toRelease) releaseWord(cond);
 }
 
-void _tfgreaterfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *result = createBoolean(op1->num > op2->num);
+void _tfGreaterFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *result = createBoolean(op1->as.num > op2->as.num);
 
     push(ctx, result);
 }
 
-void _tflessfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *result = createBoolean(op1->num < op2->num);
+void _tfLessFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *result = createBoolean(op1->as.num < op2->as.num);
 
     push(ctx, result);
 }
 
-void _tfgreaterEqfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *result = createBoolean(op1->num >= op2->num);
+void _tfGreaterEqFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *result = createBoolean(op1->as.num >= op2->as.num);
 
     push(ctx, result);
 }
 
-void _tflessEqfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *result = createBoolean(op1->num <= op2->num);
+void _tfLessEqFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *result = createBoolean(op1->as.num <= op2->as.num);
 
     push(ctx, result);
 }
 
-void _tfequalsfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
-    tf_word *result = createBoolean(op1->num == op2->num);
+void _tfEqualsFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
+    TfWord *result = createBoolean(op1->as.num == op2->as.num);
 
     push(ctx, result);
 }
@@ -282,25 +288,25 @@ void _tfequalsfun(tf_ctx *ctx, tf_word *op1, tf_word *op2) {
 // These are the functions define in the "standard library" of ToyForth
 
 /** Prints the stack on the screen. */
-void tfprint(tf_ctx *ctx) {
-    printf("=== STACK === (len = %zu)\n", ctx->stack->list.len);
+void tfPrint(TfCtx *ctx) {
+    printf("=== STACK === (len = %zu)\n", ctx->stack->as.list.len);
     printStack(ctx->stack);
     printf("\n=============\n");
 }
 
 /** Does nothing. */
-void tfnop(tf_ctx *ctx) {
+void tfNop(TfCtx *ctx) {
     (void)ctx;
 }
 
 /**
  * Duplicates the word at the top of the stack.
  */
-void tfdup(tf_ctx *ctx) {
-    TF_REQUIRE(ctx->stack->list.len > 0,
+void tfDup(TfCtx *ctx) {
+    TF_REQUIRE(ctx->stack->as.list.len > 0,
                "Tried duplicate operation when the stack was empty");
 
-    tf_word *top = peek(ctx);     // peek does automatic retain -> i need to release the word after usage
+    TfWord *top = peek(ctx);     // peek does automatic retain -> i need to release the word after usage
     push(ctx, top);               // push does automatic release from me and retain for the stack -> the ownership is transferred to the stack
 
     /**
@@ -312,79 +318,78 @@ void tfdup(tf_ctx *ctx) {
      */
 }
 
-TF_DEF_MONARY(call, call, TF_LIST);
+TF_DEF_MONARY(Call, call, TF_LIST)
 
 /**
  * Pops two words from the stack and pushes their sum (interpreting them as a TF_NUMBER).
  */
-TF_DEF_BINARY(add, +, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(Add, +, TF_NUMBER, TF_NUMBER)
 
 // control flow
-TF_DEF_BINARY(if, if, TF_LIST, TF_LIST | TF_BOOLEAN | TF_NUMBER)
-TF_DEF_TERNARY(ifelse, ifelse, TF_LIST, TF_LIST, TF_LIST | TF_BOOLEAN | TF_NUMBER)
+TF_DEF_BINARY(If, if, TF_LIST, TF_LIST | TF_BOOLEAN | TF_NUMBER)
+TF_DEF_TERNARY(Ifelse, ifelse, TF_LIST, TF_LIST, TF_LIST | TF_BOOLEAN | TF_NUMBER)
 
 // logical operators
-TF_DEF_BINARY(greater, >, TF_NUMBER, TF_NUMBER)
-TF_DEF_BINARY(less, <, TF_NUMBER, TF_NUMBER)
-TF_DEF_BINARY(greaterEq, >=, TF_NUMBER, TF_NUMBER)
-TF_DEF_BINARY(lessEq, <=, TF_NUMBER, TF_NUMBER)
-TF_DEF_BINARY(equals, ==, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(Greater, >, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(Less, <, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(GreaterEq, >=, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(LessEq, <=, TF_NUMBER, TF_NUMBER)
+TF_DEF_BINARY(Equals, ==, TF_NUMBER, TF_NUMBER)
 
 /* =============================== EXECUTION LOGIC =============================== */
 
 /** Maps the name of the function into the callback */
-static tf_function FUNCTION_TABLE[]
+static TfFunctionEntry FUNCTION_TABLE[]
     = {
-          { "print", tfprint },
-          { "nop", tfnop },
-          { "dup", tfdup },
-          { "+", tfadd },
-          { "if", tfif },
-          { "ifelse", tfifelse },
-          { "call", tfcall },
-          { ">", tfgreater },
-          { "<", tfless },
-          { ">=", tfgreaterEq },
-          { "<=", tflessEq },
-          { "==", tfequals },
-          //   { "=", tfassign }  // reserved for the future (support variables)
+          { "print",  tfPrint     },
+          { "nop",    tfNop       },
+          { "dup",    tfDup       },
+          { "+",      tfAdd       },
+          { "if",     tfIf        },
+          { "ifelse", tfIfelse    },
+          { "call",   tfCall      },
+          { ">",      tfGreater   },
+          { "<",      tfLess      },
+          { ">=",     tfGreaterEq },
+          { "<=",     tfLessEq    },
+          { "==",     tfEquals    },
+        //   { "=",      tfAssign    }
       };
 
-#define FUNCTIONS_COUNT (sizeof(FUNCTION_TABLE) / sizeof(tf_function))
+#define FUNCTIONS_COUNT (sizeof(FUNCTION_TABLE) / sizeof(TfFunctionEntry))
 
-tf_callback getCallback(const char *name) {
+/** Resolves the function by name, returning NULL if not found. */
+TfFunctionEntry *resolveFunctionByName(const char *name) {
     // trivial implementation:
     // - a table contains all the functions, with an asosciated name (string)
-    // - getCallback finds the function to execute in the table in linear time (O(n))
+    // - resolveFunctionByName finds the function to execute in the table in linear time (O(n))
 
-    tf_callback callback = NULL;
-    int found = 0;
     for (size_t i = 0; i < FUNCTIONS_COUNT; i++) {
         if (strcmp(name, FUNCTION_TABLE[i].name) == 0) {
-            callback = FUNCTION_TABLE[i].callback;
-            found = 1;
-            break;
+            return &(FUNCTION_TABLE[i]);
         }
     }
-    if (found == 0) {
-        fprintf(stderr, "Error in getCallback: invalid symbol encountered: %s\n", name);
+
+    return NULL;
+}
+
+void executeFunction(TfCtx *ctx, TfWord *fun) {
+    assert(fun->type == TF_FUNCTION);
+
+    TfFunctionEntry *fe = resolveFunctionByName(fun->as.str.ptr);
+    if (!fe) {
+        fprintf(stderr, "Error in executeFunction: invalid symbol encountered: %s\n", fe->name);
         exit(1);
     }
 
-    return callback;
+    // calls the callback
+    fe->callback(ctx);
 }
 
-void executeFunction(tf_ctx *ctx, tf_word *fun) {
-    assert(fun->type == TF_FUNCTION);
-
-    tf_callback callback = getCallback(fun->str.ptr);
-    callback(ctx);
-}
-
-void execute(tf_ctx *ctx, tf_word *program) {
-    tf_word *curr = NULL;
-    for (size_t i = 0; i < program->list.len; i++) {
-        curr = program->list.words[i];
+void execute(TfCtx *ctx, TfWord *program) {
+    TfWord *curr = NULL;
+    for (size_t i = 0; i < program->as.list.len; i++) {
+        curr = program->as.list.words[i];
         switch (curr->type) {
             case TF_NUMBER:
             case TF_BOOLEAN:
@@ -394,10 +399,12 @@ void execute(tf_ctx *ctx, tf_word *program) {
                 push(ctx, curr);
                 retainWord(curr);     // needs to retain the word again to track that 'program' still has got reference to curr
                 break;
+
             case TF_FUNCTION:
                 // executes the function with the associated name
                 executeFunction(ctx, curr);
                 break;
+                
             default:
                 fprintf(stderr, "Error in execute: invalid word type encountered: %d\n", curr->type);
                 exit(1);
