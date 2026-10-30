@@ -1,5 +1,5 @@
-#ifndef _PARSER_H_
-#define _PARSER_H_
+#ifndef _TF_PARSER_H_
+#define _TF_PARSER_H_
 
 #include "lexer.h"
 #include "word.h"
@@ -33,4 +33,4 @@ TfWord *parseToken(TfParser *p, TfToken *token);
 /** Parses the program from a given lexer and creates a list containing the words that model the program. */
 TfWord *parse(TfLexer *lexer);
 
-#endif		// _PARSER_H_
+#endif     // _TF_PARSER_H_

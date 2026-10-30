@@ -1,5 +1,5 @@
-#ifndef _LEXER_H_
-#define _LEXER_H_
+#ifndef _TF_LEXER_H_
+#define _TF_LEXER_H_
 
 #include <stddef.h>
 
@@ -42,4 +42,4 @@ int isValidSymbol(int c);
 /** Finds the next token of the source code from lexer->next, and updates this pointer. */
 TfToken findNextToken(TfLexer *lexer);
 
-#endif     // _LEXER_H_
+#endif     // _TF_LEXER_H_

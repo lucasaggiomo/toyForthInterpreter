@@ -1,10 +1,14 @@
-#ifndef _CONTEXT_H_
-#define _CONTEXT_H_
+#ifndef _TF_CONTEXT_H_
+#define _TF_CONTEXT_H_
 
 #include "word.h"
 
+typedef struct TfFunctionTable TfFunctionTable;
+
 typedef struct TfCtx {
-    TfWord *stack;     // a stack is a pointer to a TfWord of type TF_LIST
+    TfWord *stack;                 // a stack is a pointer to a TfWord of type TF_LIST
+    TfFunctionTable *funTable;     // the functions defined in this context
+    // TODO: add user variables, definitions...
 } TfCtx;
 
 void initCtx(TfCtx *ctx);
@@ -29,4 +33,4 @@ TfWord *pop(TfCtx *ctx);
  */
 TfWord *peek(TfCtx *ctx);
 
-#endif		// _CONTEXT_H_
+#endif     // _TF_CONTEXT_H_

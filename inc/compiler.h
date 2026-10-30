@@ -1,11 +1,9 @@
-#ifndef _COMPILER_H_
-#define _COMPILER_H_
+#ifndef _TF_COMPILER_H_
+#define _TF_COMPILER_H_
 
-#include "parser.h"
+#include "word.h"
 
-/**
- * Compiles 'program' into a list.
- */
+/** Compiles 'program' into a list. */
 TfWord *compile(char *program, size_t length);
 
-#endif		// _COMPILER_H_
+#endif     // _TF_COMPILER_H_

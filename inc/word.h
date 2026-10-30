@@ -1,5 +1,5 @@
-#ifndef _WORD_H_
-#define _WORD_H_
+#ifndef _TF_WORD_H_
+#define _TF_WORD_H_
 
 #include "strbuf.h"
 #include <stddef.h>
@@ -112,4 +112,4 @@ TfWord *listPop(TfWord *l);
  */
 TfWord *listPeek(TfWord *l);
 
-#endif     // _WORD_H_
+#endif     // _TF_WORD_H_

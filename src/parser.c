@@ -10,8 +10,12 @@ TfWord *parseNumber(TfToken *token) {
     // only int for now
     int num = (int)strtol(token->str, &end, 0);
     if (token->len != (size_t)(end - token->str)) {     // strtol guarantees that end >= token->str
-        fprintf(stderr, "Error in parseNumber: expected a number of length %zu digits (sign included if negative), but instead found one of length %zu\n",
-                token->len, end - token->str);
+        fprintf(
+            stderr,
+            "Error in parseNumber: expected a number of length %zu digits (sign included if negative), but instead found one of length %zu\n",
+            token->len,
+            end - token->str
+        );
         exit(1);
     }
     return createNumber(num);
@@ -80,13 +84,21 @@ TfWord *parseToken(TfParser *p, TfToken *token) {
             break;
 
         case TF_TOK_ERROR:
-            fprintf(stderr, "Error in parseToken: error token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
-                    p->lexer->next - p->lexer->program, p->lexer->next);
+            fprintf(
+                stderr,
+                "Error in parseToken: error token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
+                p->lexer->next - p->lexer->program,
+                p->lexer->next
+            );
             exit(1);
 
         default:
-            fprintf(stderr, "Error in parseToken: unrecognized token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
-                    p->lexer->next - p->lexer->program, p->lexer->next);
+            fprintf(
+                stderr,
+                "Error in parseToken: unrecognized token found at position %ld. Next 32 characters between quotes:\n\'%32s\'\n",
+                p->lexer->next - p->lexer->program,
+                p->lexer->next
+            );
             exit(1);
     }
 
@@ -101,8 +113,11 @@ TfWord *parse(TfLexer *lexer) {
     while ((token = findNextToken(lexer)).kind != TF_TOK_EOF) {
         if (token.kind == TF_TOK_RBRACKET) {
             if (p.bracket_depth == 0) {
-                fprintf(stderr, "Error in parse: unmatched ']' at position %ld\n",
-                        token.str - lexer->program);
+                fprintf(
+                    stderr,
+                    "Error in parse: unmatched ']' at position %ld\n",
+                    token.str - lexer->program
+                );
                 exit(1);
             }
         }

@@ -18,11 +18,10 @@ typedef struct StringView {
  * Creates a new StringView from a Literal string `lit`.
  * Uses 'contatenation trick' `""(lit)` to assert at compile time that `lit` is a literal (string concatenation works only with literals)
  */
-#define SV(lit)                    \
-    ((StringView) {                \
-        .data = "" lit,            \
-        .len  = sizeof("" lit) - 1 \
-    })
+#define SV(lit)         \
+    ((StringView) {     \
+        .data = "" lit, \
+        .len = sizeof("" lit) - 1 })
 
 /** Creates a new StringView from a cstr (NULL terminated string), using strlen. */
 static inline StringView svFromCstr(const char *s) {

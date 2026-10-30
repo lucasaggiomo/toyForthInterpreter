@@ -26,8 +26,11 @@ TfToken findNextToken(TfLexer *lexer) {
     skipSpaces(lexer);
 
 #ifdef DEBUG
-    printf("[DEBUG]: lexer->next = '%c' (offset %ld)\n",
-           lexer->next[0], lexer->next - lexer->program);
+    printf(
+        "[DEBUG]: lexer->next = '%c' (offset %ld)\n",
+        lexer->next[0],
+        lexer->next - lexer->program
+    );
 #endif
 
     if (lexer->next[0] == '\0')
@@ -108,8 +111,7 @@ TfToken findNextToken(TfLexer *lexer) {
         len = lexer->next - start;
 
     } else {
-        fprintf(stderr, "Error in findNextToken: unrecognized starting character at position %ld: \'%c\'.\nNext 32 characters between quotes:\n\'%32s\'\n",
-                lexer->next - lexer->program, lexer->next[0], lexer->next);
+        fprintf(stderr, "Error in findNextToken: unrecognized starting character at position %ld: \'%c\'.\nNext 32 characters between quotes:\n\'%32s\'\n", lexer->next - lexer->program, lexer->next[0], lexer->next);
         exit(1);
     }
 

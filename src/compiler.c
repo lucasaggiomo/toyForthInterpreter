@@ -1,5 +1,8 @@
 #include "compiler.h"
 
+#include "lexer.h"
+#include "parser.h"
+
 TfWord *compile(char *program, size_t length) {
     (void)length;
 

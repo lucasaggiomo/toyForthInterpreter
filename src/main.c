@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "tfstd.h"
 #include "compiler.h"
+#include "context.h"
 #include "execution.h"
 #include "utils.h"
 
@@ -84,7 +86,7 @@
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        fprintf(stderr, "Usage:\n>> %s <command>\n", argv[0]);
+        fprintf(stderr, "Usage:\n>> %s </path/to/program>\n", argv[0]);
         return 1;
     }
 
