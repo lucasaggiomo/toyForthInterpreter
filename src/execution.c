@@ -19,17 +19,17 @@
     } while (0)
 
 // an assert-like instruction that is convenient to reduce boilerplate code in functions
-#define TF_REQUIRE(expr, fmt, ...)                        \
-    do {                                                  \
-        if (!(expr)) ABORT_EXECUTION(fmt, ##__VA_ARGS__); \
+#define TF_REQUIRE(expr, fmt, ...)               \
+    do {                                         \
+        if (!(expr))                             \
+            ABORT_EXECUTION(fmt, ##__VA_ARGS__); \
     } while (0)
 
 static inline void tfRequireType(
     const char *funName,
     TfWord *op,
     TfType mask,
-    size_t num
-) {
+    size_t num) {
     if (mask != TF_UNKNOWN) {
         TF_REQUIRE(
             TF_VALID_TYPE(op, mask),
@@ -154,11 +154,11 @@ void printWord(TfWord *word, int indentation) {
             break;
 
         case TF_STRING:
-            printf("\"%s\" ", word->as.str.ptr);
+            printf("\"" SV_FMT "\" ", SV_ARGS(&word->as.str));
             break;
 
         case TF_FUNCTION:
-            printf("\'%s\' ", word->as.str.ptr);
+            printf("\'" SV_FMT "\' ", SV_ARGS(&word->as.str));
             break;
 
         case TF_LIST:
@@ -167,7 +167,8 @@ void printWord(TfWord *word, int indentation) {
             for (size_t i = 0; i < word->as.list.len; i++) {
                 printWord(word->as.list.words[i], indentation + 1);     // recursively prints the list
             }
-            for (int j = 0; j < indentation; j++) printf("\t");
+            for (int j = 0; j < indentation; j++)
+                printf("\t");
             printf("] ");
             break;
 
@@ -224,7 +225,8 @@ void _tfIfFun(TfCtx *ctx, TfWord *ifTrue, TfWord *expression) {
         execute(ctx, ifTrue);
     }
 
-    if (toRelease) releaseWord(cond);
+    if (toRelease)
+        releaseWord(cond);
 }
 
 /** condition [ifTrue] [ifFalse] ifelse */
@@ -251,7 +253,8 @@ void _tfIfelseFun(TfCtx *ctx, TfWord *ifFalse, TfWord *ifTrue, TfWord *expressio
         execute(ctx, ifFalse);
     }
 
-    if (toRelease) releaseWord(cond);
+    if (toRelease)
+        releaseWord(cond);
 }
 
 void _tfGreaterFun(TfCtx *ctx, TfWord *op1, TfWord *op2) {
@@ -307,7 +310,7 @@ void tfDup(TfCtx *ctx) {
                "Tried duplicate operation when the stack was empty");
 
     TfWord *top = peek(ctx);     // peek does automatic retain -> i need to release the word after usage
-    push(ctx, top);               // push does automatic release from me and retain for the stack -> the ownership is transferred to the stack
+    push(ctx, top);              // push does automatic release from me and retain for the stack -> the ownership is transferred to the stack
 
     /**
      * NOTE: the word 'top' had already been retained by the stack (because it hasn't been removed from the top of it).
@@ -341,31 +344,31 @@ TF_DEF_BINARY(Equals, ==, TF_NUMBER, TF_NUMBER)
 /** Maps the name of the function into the callback */
 static TfFunctionEntry FUNCTION_TABLE[]
     = {
-          { "print",  tfPrint     },
-          { "nop",    tfNop       },
-          { "dup",    tfDup       },
-          { "+",      tfAdd       },
-          { "if",     tfIf        },
-          { "ifelse", tfIfelse    },
-          { "call",   tfCall      },
-          { ">",      tfGreater   },
-          { "<",      tfLess      },
-          { ">=",     tfGreaterEq },
-          { "<=",     tfLessEq    },
-          { "==",     tfEquals    },
-        //   { "=",      tfAssign    }
+          { SV("print"), tfPrint },
+          { SV("nop"), tfNop },
+          { SV("dup"), tfDup },
+          { SV("+"), tfAdd },
+          { SV("if"), tfIf },
+          { SV("ifelse"), tfIfelse },
+          { SV("call"), tfCall },
+          { SV(">"), tfGreater },
+          { SV("<"), tfLess },
+          { SV(">="), tfGreaterEq },
+          { SV("<="), tfLessEq },
+          { SV("=="), tfEquals },
+          //   { SV("="),      tfAssign    }
       };
 
 #define FUNCTIONS_COUNT (sizeof(FUNCTION_TABLE) / sizeof(TfFunctionEntry))
 
 /** Resolves the function by name, returning NULL if not found. */
-TfFunctionEntry *resolveFunctionByName(const char *name) {
+TfFunctionEntry *resolveFunctionByName(StringView *sv) {
     // trivial implementation:
     // - a table contains all the functions, with an asosciated name (string)
     // - resolveFunctionByName finds the function to execute in the table in linear time (O(n))
 
     for (size_t i = 0; i < FUNCTIONS_COUNT; i++) {
-        if (strcmp(name, FUNCTION_TABLE[i].name) == 0) {
+        if (svCompare(sv, &FUNCTION_TABLE[i].name) == 0) {
             return &(FUNCTION_TABLE[i]);
         }
     }
@@ -376,9 +379,10 @@ TfFunctionEntry *resolveFunctionByName(const char *name) {
 void executeFunction(TfCtx *ctx, TfWord *fun) {
     assert(fun->type == TF_FUNCTION);
 
-    TfFunctionEntry *fe = resolveFunctionByName(fun->as.str.ptr);
+    StringView sv = svFromSb(&fun->as.str);
+    TfFunctionEntry *fe = resolveFunctionByName(&sv);
     if (!fe) {
-        fprintf(stderr, "Error in executeFunction: invalid symbol encountered: %s\n", fe->name);
+        fprintf(stderr, "Error in executeFunction: invalid symbol encountered: " SV_FMT "\n", SV_ARGS(&fe->name));
         exit(1);
     }
 
@@ -404,7 +408,7 @@ void execute(TfCtx *ctx, TfWord *program) {
                 // executes the function with the associated name
                 executeFunction(ctx, curr);
                 break;
-                
+
             default:
                 fprintf(stderr, "Error in execute: invalid word type encountered: %d\n", curr->type);
                 exit(1);

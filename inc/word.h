@@ -1,6 +1,7 @@
 #ifndef _WORD_H_
 #define _WORD_H_
 
+#include "strbuf.h"
 #include <stddef.h>
 
 typedef enum {
@@ -23,11 +24,6 @@ const char *getTypeName(TfType type);
 // forward declaration
 typedef struct TfWord TfWord;
 
-typedef struct TfStringPayload {
-    size_t len;
-    char *ptr;
-} TfStringPayload;
-
 typedef struct TfListPayload {
     size_t len;
     size_t capacity;
@@ -39,7 +35,7 @@ typedef union TfWordPayload {
     int num;
 
     // TF_STRING | TF_FUNCTION
-    TfStringPayload str;
+    StringBuf str;
 
     // TF_LIST: modeled as an array of type word
     TfListPayload list;

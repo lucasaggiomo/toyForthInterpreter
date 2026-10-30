@@ -2,10 +2,11 @@
 #define _EXECUTION_H_
 
 #include "context.h"
+#include "strview.h"
 
 typedef void (*TfCallback)(TfCtx *);
 typedef struct TfFunctionEntry {
-    char *name;
+    StringView name;
     TfCallback callback;
 } TfFunctionEntry;
 
@@ -26,4 +27,4 @@ void executeFunction(TfCtx *ctx, TfWord *fun);
 /** Executes each word in the list 'program' with the context 'ctx'. */
 void execute(TfCtx *ctx, TfWord *program);
 
-#endif		// _EXECUTION_H_
+#endif     // _EXECUTION_H_

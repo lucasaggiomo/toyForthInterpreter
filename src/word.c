@@ -9,23 +9,33 @@
 const char *getTypeName(TfType type) {
     switch (type) {
         default:
-        case TF_UNKNOWN: return "UNKNOWN";
-        case TF_NUMBER: return "NUMBER";
-        case TF_BOOLEAN: return "BOOLEAN";
-        case TF_STRING: return "STRING";
-        case TF_LIST: return "LIST";
-        case TF_FUNCTION: return "FUNCTION";
+        case TF_UNKNOWN:
+            return "UNKNOWN";
+        case TF_NUMBER:
+            return "NUMBER";
+        case TF_BOOLEAN:
+            return "BOOLEAN";
+        case TF_STRING:
+            return "STRING";
+        case TF_LIST:
+            return "LIST";
+        case TF_FUNCTION:
+            return "FUNCTION";
     }
 }
 
 /* =============================== CREATIONAL PROCEDURES =============================== */
 
-/** Creates a new TfWord of type `type`. Used by other creational procedures, do not use directly. */
+/**
+ * Creates a new TfWord of type `type`. Used by other creational procedures, do not use directly.
+ * The TfWord::as union is zeroed.
+ */
 TfWord *createWord(TfType type) {
     // printf("[DEBUG] Creating word of type %s\n", getTypeName(type));
     TfWord *word = xmalloc(sizeof(*word));
     word->type = type;
     word->refcount = 1;
+    memset(&word->as, 0, sizeof(word->as));
     return word;
 }
 
@@ -34,8 +44,9 @@ void freeWord(TfWord *word) {
     switch (word->type) {
         case TF_STRING:
         case TF_FUNCTION:
-            free(word->as.str.ptr);
+            sbFree(&word->as.str);
             break;
+
         case TF_LIST:
             // release every word contained in the list
             for (size_t i = 0; i < word->as.list.len; i++) {
@@ -43,6 +54,7 @@ void freeWord(TfWord *word) {
             }
             free(word->as.list.words);
             break;
+
         // to suppress warning -Wswitch
         case TF_NUMBER:
         case TF_BOOLEAN:
@@ -91,10 +103,7 @@ TfWord *createBoolean(int value) {
 
 TfWord *createString(char *string, size_t length) {
     TfWord *word = createWord(TF_STRING);
-    word->as.str.ptr = xmalloc((length + 1) * sizeof(*(word->as.str.ptr)));
-    memcpy(word->as.str.ptr, string, length);
-    word->as.str.ptr[length] = '\0';
-    word->as.str.len = length;
+    word->as.str = sbCreate(string, length);
     return word;
 }
 

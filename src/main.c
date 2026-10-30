@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,6 +105,8 @@ int main(int argc, char **argv) {
 
     TfWord *compiledProg = compile(program, len);
 
+    free(program);
+
     printf(">> The compiled program looks like this:\n");
     printListFIFO(compiledProg);
 
@@ -120,8 +121,6 @@ int main(int argc, char **argv) {
     releaseWord(compiledProg);
 
     deinitCtx(&context);
-
-    free(program);
 
     return 0;
 }
