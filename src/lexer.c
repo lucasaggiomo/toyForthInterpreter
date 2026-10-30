@@ -8,14 +8,14 @@
 #include <stdlib.h>
 
 void skipSpaces(TfLexer *lexer) {
-    while (isspace(lexer->next[0])) {
+    while (isspace((unsigned char)lexer->next[0])) {
         (lexer->next)++;
     }
 }
 
 int isValidSymbol(int c) {
     static char *validSymbols = "+-*/%><=";
-    return c != '\0' && (isalpha(c) || strchr(validSymbols, c) != NULL);
+    return c != '\0' && (isalpha((unsigned char)c) || strchr(validSymbols, c) != NULL);
 }
 
 TfToken findNextToken(TfLexer *lexer) {
@@ -44,12 +44,12 @@ TfToken findNextToken(TfLexer *lexer) {
     char *start = lexer->next;
     size_t len = 0;
     TfTokenKind kind = TF_TOK_ERROR;
-    if (isdigit(lexer->next[0]) || (lexer->next[0] == '-' && isdigit(lexer->next[1]))) {
+    if (isdigit((unsigned char)lexer->next[0]) || (lexer->next[0] == '-' && isdigit((unsigned char)lexer->next[1]))) {
 
         kind = TF_TOK_NUMBER;
         if (lexer->next[0] == '-')
             (lexer->next)++;
-        while (isdigit(lexer->next[0])) {
+        while (isdigit((unsigned char)lexer->next[0])) {
             (lexer->next)++;
         }
         len = lexer->next - start;
@@ -100,7 +100,11 @@ TfToken findNextToken(TfLexer *lexer) {
         while (lexer->next[0] != '\n' && lexer->next[0] != '\0') {
             (lexer->next)++;
         }
-        (lexer->next)++;     // skips '\n'
+
+        // skips '\n'
+        if (lexer->next[0] == '\n')
+            (lexer->next)++;
+
         len = lexer->next - start;
 
     } else {
